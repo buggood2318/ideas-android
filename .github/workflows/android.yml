@@ -32,8 +32,17 @@ jobs:
       - name: 确认安卓 SDK
         run: echo "ANDROID_HOME=$ANDROID_HOME" && ls $ANDROID_HOME/platforms | tail -3
 
+      - name: 写入固定签名证书
+        run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > "$GITHUB_WORKSPACE/android/app/ideavault.p12"
+
       - name: 编译 APK
         working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/android/app/ideavault.p12
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace

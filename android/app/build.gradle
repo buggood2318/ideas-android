@@ -7,8 +7,8 @@ android {
         applicationId "com.buggood2318.ideavault"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode System.getenv("BUILD_NUMBER") ? Integer.parseInt(System.getenv("BUILD_NUMBER")) : 1
+        versionName "1.0" + (System.getenv("BUILD_NUMBER") ? "." + System.getenv("BUILD_NUMBER") : "")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +16,31 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // 固定签名：由 GitHub Secrets 提供，保证每次构建证书一致，可以覆盖安装
+    signingConfigs {
+        fixed {
+            if (System.getenv("KEYSTORE_PATH")) {
+                storeFile file(System.getenv("KEYSTORE_PATH"))
+                storePassword System.getenv("KEYSTORE_PASS")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASS")
+                storeType "PKCS12"
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (System.getenv("KEYSTORE_PATH")) {
+                signingConfig signingConfigs.fixed
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            if (System.getenv("KEYSTORE_PATH")) {
+                signingConfig signingConfigs.fixed
+            }
         }
     }
 }

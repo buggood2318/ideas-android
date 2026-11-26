@@ -4,3 +4,4 @@ android/build/
 android/app/build/
 android/local.properties
 www/.DS_Store
+android/app/ideavault.p12
