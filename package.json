@@ -4,6 +4,7 @@
   "private": true,
   "description": "想法速记 + 对话",
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^6.0.1",
     "@capacitor/android": "^6.2.0",
     "@capacitor/core": "^6.2.0"
   },
