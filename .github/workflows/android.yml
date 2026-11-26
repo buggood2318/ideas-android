@@ -1,0 +1,48 @@
+name: 构建 APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 同步网页资源进 APK
+        run: npx cap copy android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: 编译 APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: 想法速记 v1.0.${{ github.run_number }}
+          body: |
+            自动构建的安卓安装包。
+            下载下面的 app-debug.apk，在手机上点开安装（需允许「安装未知来源应用」）。
+          files: android/app/build/outputs/apk/debug/app-debug.apk
