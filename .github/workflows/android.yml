@@ -29,7 +29,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: 确认安卓 SDK
+        run: echo "ANDROID_HOME=$ANDROID_HOME" && ls $ANDROID_HOME/platforms | tail -3
 
       - name: 编译 APK
         working-directory: android
