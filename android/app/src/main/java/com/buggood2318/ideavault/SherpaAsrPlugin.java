@@ -87,23 +87,28 @@ public class SherpaAsrPlugin extends Plugin {
         if (recognizer != null) return recognizer;
         File model = assetToFile(MODEL_ASSET);
         File tokens = assetToFile(TOKENS_ASSET);
-        OnlineRecognizerConfig config = OnlineRecognizerConfig.builder()
-                .setOnlineModelConfig(OnlineModelConfig.builder()
-                        .setZipformer2Ctc(OnlineZipformer2CtcModelConfig.builder()
-                                .setModel(model.getAbsolutePath())
-                                .build())
-                        .setTokens(tokens.getAbsolutePath())
-                        .setNumThreads(2)
-                        .setDebug(false)
-                        .build())
-                .setFeatureConfig(FeatureConfig.builder()
-                        .setSampleRate(SAMPLE_RATE)
-                        .setFeatureDim(80)
-                        .build())
-                .setDecodingMethod("greedy_search")
-                .setEnableEndpoint(false)
-                .build();
-        recognizer = new OnlineRecognizer(config);
+        // AAR 版 API 是 Kotlin data class：直接 new + setter，没有 builder()
+        OnlineZipformer2CtcModelConfig ctc = new OnlineZipformer2CtcModelConfig();
+        ctc.setModel(model.getAbsolutePath());
+
+        OnlineModelConfig mc = new OnlineModelConfig();
+        mc.setZipformer2Ctc(ctc);
+        mc.setTokens(tokens.getAbsolutePath());
+        mc.setNumThreads(2);
+        mc.setDebug(false);
+
+        FeatureConfig fc = new FeatureConfig();
+        fc.setSampleRate(SAMPLE_RATE);
+        fc.setFeatureDim(80);
+
+        OnlineRecognizerConfig config = new OnlineRecognizerConfig();
+        config.setFeatConfig(fc);
+        config.setModelConfig(mc);
+        config.setDecodingMethod("greedy_search");
+        config.setEnableEndpoint(false);
+
+        // 传 null 表示用文件路径（不通过 AssetManager）
+        recognizer = new OnlineRecognizer(null, config);
         return recognizer;
     }
 
@@ -191,7 +196,7 @@ public class SherpaAsrPlugin extends Plugin {
                     emit("error", "麦克风打不开");
                     return;
                 }
-                OnlineStream stream = rec.createStream();
+                OnlineStream stream = rec.createStream("");
                 recorder.startRecording();
                 short[] buf = new short[1600];   // 100ms
                 while (running) {
@@ -256,7 +261,7 @@ public class SherpaAsrPlugin extends Plugin {
                     samples = w.samples;
                     sr = w.sampleRate;
                 }
-                OnlineStream stream = rec.createStream();
+                OnlineStream stream = rec.createStream("");
                 stream.acceptWaveform(samples, sr);
                 // 末尾补 1 秒静音，把最后一段推出来
                 stream.acceptWaveform(new float[sr], sr);
