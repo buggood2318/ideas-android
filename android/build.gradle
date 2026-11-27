@@ -21,6 +21,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // sherpa-onnx 的 Android AAR 发布在 JitPack（离线语音识别，2026-11-27 加）
+        maven { url 'https://jitpack.io' }
     }
 }
 

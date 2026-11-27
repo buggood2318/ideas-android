@@ -24,6 +24,19 @@ jobs:
       - name: 同步网页资源进 APK
         run: npx cap copy android
 
+      - name: 下载离线语音模型（26MB，不进仓库）
+        run: |
+          set -e
+          URL=https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01.tar.bz2
+          curl -L --retry 3 --retry-delay 2 -o /tmp/asr.tar.bz2 "$URL"
+          tar -xjf /tmp/asr.tar.bz2 -C /tmp
+          SRC=/tmp/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01
+          mkdir -p android/app/src/main/assets/asr
+          cp "$SRC/model.int8.onnx" android/app/src/main/assets/asr/
+          cp "$SRC/tokens.txt" android/app/src/main/assets/asr/
+          cp "$SRC/test_wavs/1.wav" android/app/src/main/assets/asr/probe.wav
+          ls -lh android/app/src/main/assets/asr
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
