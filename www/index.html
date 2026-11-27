@@ -475,6 +475,23 @@ input:focus{border-color:var(--accent)}
   }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
+  // 预置配置（只有私人构建的 APK 里会带 preconf.json，公开网页版没有这个文件）
+  // 目的：装完就能用，不用手动粘 DeepSeek 密钥和 GitHub 令牌
+  function applyPreconf() {
+    if (lsGet('iv.noPreconf', false)) return;
+    if (cfg && cfg.token && ai && ai.key) return;      // 已经配过就不覆盖
+    fetch('preconf.json', { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('no preconf');
+      return r.json();
+    }).then(function (p) {
+      if (!p) return;
+      if (p.cfg && (!cfg || !cfg.token)) { cfg = p.cfg; lsSet('iv.cfg', cfg); }
+      if (p.ai && (!ai || !ai.key)) { ai = p.ai; lsSet('iv.ai', ai); }
+      renderStatus();
+      if (cfg && cfg.token) syncQueue().then(renderStatus, function () {});
+    }).catch(function () { /* 没有预置文件就按原来的手工设置走 */ });
+  }
+
   var cfg = lsGet('iv.cfg', null);      // {owner,repo,branch,prefix,token}
   var queue = lsGet('iv.queue', []);    // 待上传
   var log = lsGet('iv.log', []);        // 本机已记录（含未上传）
@@ -782,6 +799,10 @@ input:focus{border-color:var(--accent)}
     if (!confirm('清除这台手机上的仓库设置和令牌？已记录的想法（未上传的）会保留。')) return;
     cfg = null;
     localStorage.removeItem('iv.cfg');
+    ai = null;
+    localStorage.removeItem('iv.ai');
+    // 用户主动清除后，不要再被预置配置自动填回来
+    lsSet('iv.noPreconf', true);
     $('#sheetSettings').hidden = true;
     renderStatus();
   });
@@ -1405,6 +1426,7 @@ input:focus{border-color:var(--accent)}
   // ---------- 启动 ----------
   renderStatus();
   renderVoices();
+  applyPreconf();          // 私人版 APK 会带 preconf.json，自动把密钥/令牌填好
   if (cfg && cfg.token) syncQueue().then(renderStatus, function () {});
   window.addEventListener('online', function () {
     if (cfg && cfg.token) syncQueue().then(renderStatus, function () {});

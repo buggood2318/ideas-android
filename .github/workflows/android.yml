@@ -21,6 +21,26 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      - name: 写入预置配置（密钥只从 Secrets 取，不进仓库）
+        env:
+          AI_KEY: ${{ secrets.DEEPSEEK_KEY }}
+          DATA_TOKEN: ${{ secrets.DATA_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          ai_key = os.environ.get('AI_KEY', '')
+          data_token = os.environ.get('DATA_TOKEN', '')
+          p = {}
+          if ai_key:
+              p['ai'] = {'base': 'https://api.deepseek.com', 'model': 'deepseek-chat', 'key': ai_key}
+          if data_token:
+              p['cfg'] = {'owner': 'buggood2318', 'repo': 'ideas-data', 'branch': 'main',
+                          'prefix': '我想法', 'token': data_token}
+          with open('www/preconf.json', 'w', encoding='utf-8') as f:
+              json.dump(p, f, ensure_ascii=False)
+          print('preconf 字段:', list(p.keys()))
+          EOF
+
       - name: 同步网页资源进 APK
         run: npx cap copy android
 
@@ -63,6 +83,8 @@ jobs:
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
         with:
+          # 草稿：包里有预置密钥，不能出现在公开列表里（只有仓库主人能通过 API 下载）
+          draft: true
           tag_name: v1.0.${{ github.run_number }}
           name: 想法速记 v1.0.${{ github.run_number }}
           body: |
